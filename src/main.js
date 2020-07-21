@@ -2,8 +2,16 @@ import Vue from 'vue'
 import App from './App.vue'
 import router from './router'
 import store from './store'
+import ElementUI from 'element-ui'
+import 'element-ui/lib/theme-chalk/index.css'
+import http from '@/config/axios'
 
 Vue.config.productionTip = false
+// 配置所有的element ui 组件的大小尺寸
+Vue.use(ElementUI, { size: 'small', zIndex: 3000 });
+// 所有请求方法挂载到原型上
+Vue.prototype.$axios = http
+
 
 new Vue({
   router,
