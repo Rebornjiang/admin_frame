@@ -6,10 +6,13 @@
         refName="testForm"
         :formConfig="formConfig"
         :formData="formData"
+        :btnConfig="btnConfig"
         :rules="rules"
+        remoteSelectAxiosFn="login"
         @dateChange="dateChange"
         @radioGroupChange="radioGroupChange"
         @selectChange="selectChange"
+        @submitCallback="submitCallback"
       >
       </jr-form>
     </div>
@@ -25,8 +28,26 @@ export default {
   components: { JrForm },
   data() {
     return {
-      formData: { selectVal: [1, 2], dateTimeVal: ['2020-06-30 12:00:00', '2020-07-30 12:00:00'], dateVal: ['2020-06-30', '2020-07-30'], checkboxVal: [1, 2], testVal: 'reborn', readOnlyVal: 'hello world', passwordVal: '1234541', textareaVal: 'jalsdkjfalkdsjf' },
-      rules: {},
+      formData: { selectVal: [1, 2], dateTimeVal: ['2020-06-30 12:00:00', '2020-07-30 12:00:00'], dateVal: ['2020-06-30', '2020-07-30'], checkboxVal: [1, 2], readOnlyVal: 'hello world', passwordVal: '1234541', textareaVal: 'jalsdkjfalkdsjf' },
+      rules: {
+        testVal: [{ required: true, message: '请完成扁担填写', trigger: 'blur' }]
+      },
+      btnConfig: {
+        isShowBtn: true,
+        list: [
+          {
+            isShow: true,
+            fnType: 'firstFn',
+            axiosFn: 'login',
+            callback: 'submitCallback'
+          },
+          {
+            isShow: true,
+            fnType: 'lastFn',
+            isCancelBtn: false
+          }
+        ]
+      },
       formConfig: [
         {
           span: 24,
@@ -127,6 +148,11 @@ export default {
                   value: 3
                 }
               ]
+            },
+            {
+              type: 'remoteSelect',
+              prop: 'remoteSelectVal',
+              label: '远程搜索'
             }
           ]
         }
@@ -149,6 +175,9 @@ export default {
     },
     selectChange(val) {
       console.log(val, 'select 选择')
+    },
+    submitCallback() {
+      console.log('提交表单回调触发')
     }
   }
 }

@@ -108,17 +108,38 @@
             </el-form-item>
 
             <!-- 11.remoteSelect 模糊搜索 -->
-            <!-- <el-form-item :key="index" v-if="!item.hidden && item.type === 'remoteSelect'" :label="item.label" :prop="item.prop">
-            </el-form-item>  -->
+            <el-form-item :key="index" v-if="!item.hidden && item.type === 'remoteSelect'" :label="item.label" :prop="item.prop">
+              <el-select v-model="formData[item.prop]" :multiple="item.multiple" filterable remote reserve-keyword :placeholder="item.placeholder || '请输入关键词'" :remote-method="remoteMethod" :loading="selectLoading">
+                <template>
+                  <el-option
+                    v-for="curItem in selectOptionList"
+                    :key="curItem.value"
+                    :label="curItem.label"
+                    :value="curItem.value">
+                  </el-option>
+                </template>
+              </el-select>
+            </el-form-item>
+
+            <!-- 12.Cascader 级联选择器 -->
+            <el-form-item :key="index" v-if="!item.hidden && item.type === 'cascader'" :label="item.label" :prop="item.prop">
+              <el-cascader
+                v-model="formData[item.prop]"
+                :options="item.optionList"
+                clearable
+                @change="item.changeFn ? cascaderChange($event, item.changeFn) : null">
+              </el-cascader>
+            </el-form-item>
           </template>
         </el-col>
       </template>
     </el-row>
 
     <!-- button 部分 -->
-    <div v-if="btnConfig.isShowBtn">
+    <div v-if="btnConfig.isShowBtn" :style="btnConfig.style || 'text-align: center;'">
       <template v-for="item in btnConfig.list">
-        <el-button :key="item.fnType" v-if="item.isShow" :type="item.type" @click="item[fnType]()">{{item.text}}</el-button>
+        <el-button :key="item.fnType || 'firstType'" v-if="item.isShow && item.fnType === 'firstFn'" :type="item.type || 'primary'" @click="firstBtnFn(item)" :style="item.style || 'margin-right: 20px;'">{{item.text || '保存'}}</el-button>
+        <el-button :key="item.fnType || 'lastType'" v-if="item.isShow && item.fnType === 'lastFn'" :type="item.type || ''" @click="lastBtnFn(item)" :style="item.style || ''">{{item.text || '取消'}}</el-button>
       </template>
     </div>
     <!--
@@ -133,12 +154,14 @@
                 8.date 日期选择 (值有为 date 或是 array)
                 9.dateTime 日期时间
                 10.select 选择器（单项多选一起）
-                11.remoteSelect 模糊查询
+                11.remoteSelect 模糊查询 // 需要从父组件传入一个remoteSelectAxiosFn，便于子组件发送请求
+                12.Cascader 级联选择器
       数据结构
       formConfig = [
         {
           hidden: false
-
+          span
+          list
         }, // 每一个对象控制一列数据
         {
         }
@@ -182,32 +205,107 @@ export default {
       type: Object,
       default: () => {
         return {
-          isShowBtn: true,
+          isShowBtn: true, // *
           list: [
             {
-              isShow: true,
-              text: '保存',
-              fnType:                                                                           
+              isShow: true, // *
+              fnType: 'firstFn' // * 为什么要有这个属性，是因为函数名一开始必须存在，不能够动态的生成，所以一开始就需要定义两个btn。两个btn如果采取的是循环遍历的方法，就需要添加一个flag用于消除每次循环中其中的一个btn。
             },
             {
               isShow: true,
-              text: '取消',
               fnType: 'lastFn'
             }
           ]
         }
       }
+    },
+    remoteSelectAxiosFn: {
+      type: String,
+      default: ''
     }
   },
   data() {
-    return {}
+    return {
+      selectLoading: false,
+      selectOptionList: []
+    }
   },
   methods: {
-    firstFn() {
-      console.log('第一个BTn触发')
+    firstBtnFn(item) {
+      this.$refs[this.refName].validate(valid => {
+        if (valid) {
+          item.axiosFn && this.$axios[item.axiosFn](this.formData).then(res => {
+            this.$message({ message: res.message, type: 'success' })
+            this.resetFields()
+            if (item.callback) {
+              this.$emit(item.callback, res)
+            }
+          })
+        } else {
+          this.$message({
+            message: '表单信息有误，请检查确认',
+            type: 'warning'
+          })
+        }
+      })
     },
-    lastFn() {
-      console.log('第二个BTn触发')
+    lastBtnFn(item) {
+      // 第二个btn  通常是作为取消按钮来的,不传默认为清除按钮
+      if (item.isCancelBtn) {
+        this.$refs[this.refName].validate(valid => {
+          if (valid) {
+            item.axiosFn && this.$axios[item.axiosFn](this.formData).then(res => {
+              this.$message({ message: res.message, type: 'success' })
+              this.resetFields()
+              if (item.callback) {
+                this.$emit(item.callback, res)
+              }
+            })
+          } else {
+            this.$message({
+              message: '表单信息有误，请检查确认',
+              type: 'warning'
+            })
+          }
+        })
+      } else {
+        // 作为取消按钮的话
+        this.resetFields()
+      }
+    },
+    // 用于外部表单提交
+    validate(callback) {
+      this.$refs[this.refName].validate(valid => {
+        if (valid) {
+          callback && callback(this.formData)
+        } else {
+          callback && callback()
+        }
+      })
+    },
+    // promise版本
+    validatePromise() {
+      return new Promise((resolve, reject) => {
+        this.$refs[this.refName].validate(valid => {
+          if (valid) {
+            resolve(this.formData)
+          } else {
+            reject(valid)
+          }
+        })
+      })
+    },
+    // 重置表单
+    resetFields() {
+      this.$refs[this.refName].resetFields()
+    },
+    // 清除校验结果
+    clearValidate() {
+      this.$refs[this.refName].clearValidate()
+    },
+    // 对部分表单进行校验
+    validateField(val) {
+      this.$refs[this.refName].validateField(val)
     },
     radioGroupChange(val, changeFn) {
       changeFn && this.$emit(changeFn, val)
@@ -219,6 +317,22 @@ export default {
       changeFn && this.$emit(changeFn, val)
     },
     selectChange(val, changeFn) {
+      changeFn && this.$emit(changeFn, val)
+    },
+    remoteMethod(query) {
+      console.log(query, 'query')
+      console.log(this.remoteSelectAxiosFn, 'remoteSelectAxiosFn')
+      if (query !== '') {
+        this.selectLoading = true
+        // 此处不知道接口内容是啥，暂且不做
+        this.$axios[this.remoteSelectAxiosFn](query).then(res => {
+          console.log(res)
+          this.selectLoading = false
+          this.selectOptionList = res.data
+        })
+      }
+    },
+    cascaderChange(val, changeFn) {
       changeFn && this.$emit(changeFn, val)
     }
   },

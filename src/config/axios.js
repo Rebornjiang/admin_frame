@@ -39,6 +39,7 @@ for (const key in AllApi) {
     } else if (method === 'delete' || method === 'get') {
       try {
         config[params] = newParams
+        console.log(config[params], '是否有内容')
         response = await service[method](url, config)
       } catch (err) {
         response = err
