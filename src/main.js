@@ -5,6 +5,7 @@ import store from './store'
 import ElementUI from 'element-ui'
 import 'element-ui/lib/theme-chalk/index.css'
 import http from '@/config/axios'
+import './assets/css/formatEleUi.styl'
 
 Vue.config.productionTip = false
 // 配置所有的element ui 组件的大小尺寸

@@ -16,6 +16,7 @@
       >
       </jr-form>
     </div>
+    <el-button type="primary" @click="open">哈哈哈打开附件</el-button>
   </div>
 </template>
 
@@ -178,7 +179,31 @@ export default {
     },
     submitCallback() {
       console.log('提交表单回调触发')
+    },
+    open() {
+      this.$confirm('此操作将永久删除该文件, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        this.$message({
+          type: 'success',
+          message: '删除成功!'
+        })
+      }).catch(() => {
+        this.$message({
+          type: 'info',
+          message: '已取消删除'
+        })
+      })
     }
   }
 }
 </script>
+
+<style lang="stylus" scoped>
+.el-button--primary
+  background-color blue
+  border-color red
+  color black
+</style>
